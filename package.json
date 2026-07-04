@@ -1,5 +1,5 @@
 {
-  "name": "my-emdash",
+  "name": "@emdash-cms/template-blog-cloudflare",
   "version": "0.0.3",
   "private": true,
   "type": "module",
