@@ -1,9 +1,9 @@
 name: Sync EmDash Cloudflare template
 
-on:
+"on":
+  workflow_dispatch: {}
   schedule:
     - cron: "10 19 * * *"
-  workflow_dispatch:
 
 permissions:
   contents: write
