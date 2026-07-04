@@ -38,29 +38,6 @@ jobs:
 
           rsync -a --delete upstream-templates/blog-cloudflare/ ./             --exclude ".git/"             --exclude ".github/"             --exclude "wrangler.jsonc"             --exclude "seed/"
 
-          node <<'NODE'
-          const fs = require("fs");
-          const file = "wrangler.jsonc";
-
-          if (!fs.existsSync(file)) {
-            process.exit(0);
-          }
-
-          let text = fs.readFileSync(file, "utf8");
-          text = text.replace(
-            /
-\s*\/\/ Worker Loader for plugin sandboxing\s*
-\s*"worker_loaders"\s*:\s*\[\s*\{\s*"binding"\s*:\s*"LOADER"\s*,?\s*\}\s*,?\s*\]\s*,?/s,
-            "
-"
-          );
-          text = text.replace(/
-{3,}/g, "
-
-");
-          fs.writeFileSync(file, text);
-          NODE
-
       - name: Commit synced template
         run: |
           set -euo pipefail
