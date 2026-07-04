@@ -1,0 +1,78 @@
+name: Sync EmDash Cloudflare template
+
+on:
+  schedule:
+    - cron: "10 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-emdash-cloudflare-template
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync blog-cloudflare template
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'nextwa/my-emdash' }}
+
+    steps:
+      - name: Checkout site repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Checkout upstream templates
+        uses: actions/checkout@v4
+        with:
+          repository: emdash-cms/templates
+          ref: main
+          path: upstream-templates
+
+      - name: Sync template files
+        run: |
+          set -euo pipefail
+
+          rsync -a --delete upstream-templates/blog-cloudflare/ ./             --exclude ".git/"             --exclude ".github/"             --exclude "wrangler.jsonc"             --exclude "seed/"
+
+          node <<'NODE'
+          const fs = require("fs");
+          const file = "wrangler.jsonc";
+
+          if (!fs.existsSync(file)) {
+            process.exit(0);
+          }
+
+          let text = fs.readFileSync(file, "utf8");
+          text = text.replace(
+            /
+\s*\/\/ Worker Loader for plugin sandboxing\s*
+\s*"worker_loaders"\s*:\s*\[\s*\{\s*"binding"\s*:\s*"LOADER"\s*,?\s*\}\s*,?\s*\]\s*,?/s,
+            "
+"
+          );
+          text = text.replace(/
+{3,}/g, "
+
+");
+          fs.writeFileSync(file, text);
+          NODE
+
+      - name: Commit synced template
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "No template updates."
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "chore: sync EmDash Cloudflare template"
+          git push origin HEAD:main
