@@ -43,6 +43,8 @@ jobs:
             --exclude "wrangler.jsonc" \
             --exclude "seed/"
 
+          rm -rf upstream-templates
+
       - name: Commit synced template
         run: |
           set -euo pipefail
