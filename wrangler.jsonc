@@ -18,6 +18,12 @@
       "preview_bucket_name": "my-emdash-media",
     },
   ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "a6b4d3b801974215872df85858b0aa5f",
+    },
+  ],
   // Worker Loader is disabled so this can deploy on Cloudflare Workers Free.
   // Enabling Worker Loader bindings requires the Workers Paid plan.
   // Drives scheduled publishing, plugin cron, and maintenance (see src/worker.ts)
