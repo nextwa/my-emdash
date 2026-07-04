@@ -1,0 +1,62 @@
+name: Sync DashCommerce starter
+
+"on":
+  workflow_dispatch: {}
+  schedule:
+    - cron: "20 19 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-dashcommerce-starter
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync starter template
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'nextwa/my-emdash' }}
+
+    steps:
+      - name: Checkout site repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Checkout upstream starter
+        uses: actions/checkout@v4
+        with:
+          repository: emdashCommerce/starter
+          ref: main
+          path: upstream-starter
+
+      - name: Sync starter files
+        run: |
+          set -euo pipefail
+
+          rsync -a --delete upstream-starter/ ./ \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude "upstream-starter/" \
+            --exclude "wrangler.jsonc" \
+            --exclude "package.json"
+
+          rm -rf upstream-starter
+
+      - name: Commit synced starter
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "No starter updates."
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "chore: sync DashCommerce starter"
+          git push origin HEAD:main
