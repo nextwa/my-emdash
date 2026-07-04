@@ -36,7 +36,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          rsync -a --delete upstream-templates/blog-cloudflare/ ./             --exclude ".git/"             --exclude ".github/"             --exclude "wrangler.jsonc"             --exclude "seed/"
+          rsync -a --delete upstream-templates/blog-cloudflare/ ./ \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude "upstream-templates/" \
+            --exclude "wrangler.jsonc" \
+            --exclude "seed/"
 
       - name: Commit synced template
         run: |
