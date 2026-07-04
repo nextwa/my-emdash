@@ -19,7 +19,7 @@
     },
   ],
   // Worker Loader is disabled so this can deploy on Cloudflare Workers Free.
-  // Enabling worker_loaders requires the Workers Paid plan.
+  // Enabling Worker Loader bindings requires the Workers Paid plan.
   // Drives scheduled publishing, plugin cron, and maintenance (see src/worker.ts)
   "triggers": {
     "crons": ["* * * * *"],
