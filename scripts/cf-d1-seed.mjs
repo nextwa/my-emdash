@@ -31,7 +31,7 @@ import {
 const WRANGLER = "wrangler.jsonc";
 const BACKUP = "wrangler.jsonc.bak";
 const PLACEHOLDER = "REPLACE_AFTER_WRANGLER_D1_CREATE";
-const DB_NAME = "dashcommerce-demo";
+const DB_NAME = process.env.CF_D1_DATABASE_NAME ?? "dashcommerce-demo";
 
 const dbId = process.env.CF_D1_DATABASE_ID;
 if (!dbId) {
@@ -83,7 +83,7 @@ process.on("SIGINT", () => {
 
 try {
 	console.log("→ Bootstrapping local SQLite...");
-	run("bun", ["run", "bootstrap"]);
+	run(process.env.BUN_BIN ?? "bun", ["run", "bootstrap"]);
 
 	console.log("→ Generating D1-safe SQL dump...");
 	run("node", ["scripts/cf-d1-dump.mjs"]);

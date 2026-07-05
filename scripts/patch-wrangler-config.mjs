@@ -76,9 +76,23 @@ if (r2PublicUrl) {
 writeFileSync(CONFIG_PATH, JSON.stringify(config, null, "\t") + "\n");
 
 if (patches.length === 0) {
-	console.warn(
-		"[patch-wrangler] No binding env vars set — deploy will likely fail with 'must have a valid id specified'. Set CF_D1_DATABASE_ID and CF_KV_SESSION_ID on the Worker project.",
+	const hasResolvedD1 = config.d1_databases?.some(
+		(db) => db.binding === "DB" && db.database_id && !String(db.database_id).startsWith("REPLACE_"),
 	);
+	const hasResolvedKv = config.kv_namespaces?.some(
+		(ns) => ns.binding === "SESSION" && ns.id,
+	);
+	const hasResolvedR2 = config.r2_buckets?.some(
+		(bucket) => bucket.binding === "MEDIA" && bucket.bucket_name,
+	);
+
+	if (hasResolvedD1 && hasResolvedKv && hasResolvedR2) {
+		console.log("[patch-wrangler] Existing D1/KV/R2 bindings are already resolved.");
+	} else {
+		console.warn(
+			"[patch-wrangler] No binding env vars set and generated config still has unresolved bindings. Set CF_D1_DATABASE_ID and CF_KV_SESSION_ID before deploying.",
+		);
+	}
 } else {
 	console.log(`[patch-wrangler] Patched: ${patches.join(", ")}`);
 }

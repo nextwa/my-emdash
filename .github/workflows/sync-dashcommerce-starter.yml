@@ -41,7 +41,11 @@ jobs:
             --exclude ".github/" \
             --exclude "upstream-starter/" \
             --exclude "wrangler.jsonc" \
-            --exclude "package.json"
+            --exclude "package.json" \
+            --exclude "pnpm-lock.yaml" \
+            --exclude "pnpm-workspace.yaml" \
+            --exclude "scripts/patch-wrangler-config.mjs" \
+            --exclude "scripts/cf-d1-seed.mjs"
 
           rm -rf upstream-starter
 
