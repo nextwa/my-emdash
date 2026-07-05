@@ -1,9 +1,75 @@
+diff --git a/dist/index.js b/dist/index.js
+index cff87ceab2d522286e27c12b82467520e196b9d1..8b83d54ee9560a64d01078113e845fd6b7534219 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -94,33 +94,7 @@ function dashcommerce(options = {}) {
+ 				icon: "settings"
+ 			}
+ 		],
+-		adminWidgets: [
+-			{
+-				id: "revenue-snapshot",
+-				title: "Revenue",
+-				size: "half"
+-			},
+-			{
+-				id: "low-stock-alerts",
+-				title: "Low Stock",
+-				size: "half"
+-			},
+-			{
+-				id: "recent-orders",
+-				title: "Recent Orders",
+-				size: "full"
+-			},
+-			{
+-				id: "pending-reviews",
+-				title: "Pending Reviews",
+-				size: "third"
+-			},
+-			{
+-				id: "failed-subscriptions",
+-				title: "Failed Renewals",
+-				size: "third"
+-			}
+-		],
++		adminWidgets: [],
+ 		fieldWidgets: [{
+ 			name: "vendor-select",
+ 			label: "Vendor picker",
 diff --git a/dist/sandbox-entry.js b/dist/sandbox-entry.js
-index 980dca483d6fbb2775b7f12278c3e23da2185d96..b8d8441b72c64058ea93b03916eb2f21069616da 100644
+index 9314d086ae98e3709ea8f6b571782e027c515640..12c25c231d0231557f510fa52a6fe37c360e95fe 100644
 --- a/dist/sandbox-entry.js
 +++ b/dist/sandbox-entry.js
-@@ -6833,31 +6833,7 @@ const ADMIN_PAGES = [
- 	{ path: "/settings", label: "Settings", icon: "settings" }
+@@ -3,7 +3,6 @@ import { _ as sub, g as percent, i as add, m as mul, o as format, p as money, t
+ import { i as reviewsStore, n as getReview, o as submitReview, r as listReviewsForProduct, s as randomId, t as ReviewValidationError } from "./store-F8p2qiFf.js";
+ import { n as getVariant, t as adjustVariantStock } from "./variants-DtT0EhoQ.js";
+ import { i as normalizeCurrencyList, r as isValidCurrencyCode } from "./currencies-a1p_qD_L.js";
+-import { adaptSandboxEntry, definePlugin } from "emdash";
+ 
+ //#region src/products/types.ts
+ function productTypeRequiresSubscriptionConfig(type) {
+@@ -6750,7 +6749,7 @@ const DEFAULT_CAPABILITIES = [
+ 	"email:send"
+ ];
+ const DEFAULT_ALLOWED_HOSTS = ["api.stripe.com", "files.stripe.com"];
+-const definition = definePlugin({
++const definition = {
+ 	hooks: {
+ 		"content:beforeSave": { handler: productBeforeSave },
+ 		cron: { handler: cronHandler },
+@@ -6769,7 +6768,7 @@ const definition = definePlugin({
+ 		...webhookRoutes,
+ 		...adminApiRoutes
+ 	}
+-});
++};
+ /**
+ * Static admin page list — must match src/index.ts adminPages.
+ * Defined here so `adaptSandboxEntry` can populate `admin.pages`,
+@@ -6833,33 +6832,7 @@ const ADMIN_PAGES = [
+ 		icon: "settings"
+ 	}
  ];
 -const ADMIN_WIDGETS = [
 -	{
@@ -33,6 +99,154 @@ index 980dca483d6fbb2775b7f12278c3e23da2185d96..b8d8441b72c64058ea93b03916eb2f21
 -	}
 -];
 +const ADMIN_WIDGETS = [];
- const FIELD_WIDGETS = [
- 	{
- 		name: "vendor-select",
+ const FIELD_WIDGETS = [{
+ 	name: "vendor-select",
+ 	label: "Vendor picker",
+@@ -6889,27 +6862,120 @@ const PORTABLE_TEXT_BLOCKS = [
+ 		description: "Inline quote from an approved review."
+ 	}
+ ];
++const CAPABILITY_RENAMES = {
++	"read:content": "content:read",
++	"write:content": "content:write",
++	"read:media": "media:read",
++	"write:media": "media:write",
++	"read:users": "users:read",
++	"network:fetch": "network:request",
++	"network:fetch:any": "network:request:unrestricted"
++};
++const DEFAULT_PRIORITY = 100;
++const DEFAULT_TIMEOUT = 5e3;
++const DEFAULT_ERROR_POLICY = "abort";
++function normalizeCapabilities(capabilities) {
++	const normalized = [];
++	for (const capability of capabilities) {
++		const current = CAPABILITY_RENAMES[capability] ?? capability;
++		if (!normalized.includes(current)) normalized.push(current);
++	}
++	if (normalized.includes("content:write") && !normalized.includes("content:read")) normalized.push("content:read");
++	if (normalized.includes("media:write") && !normalized.includes("media:read")) normalized.push("media:read");
++	if (normalized.includes("network:request:unrestricted") && !normalized.includes("network:request")) normalized.push("network:request");
++	return normalized;
++}
++function resolveSandboxedHook(entry, pluginId) {
++	if (typeof entry === "object" && entry !== null && "handler" in entry) return {
++		priority: entry.priority ?? DEFAULT_PRIORITY,
++		timeout: entry.timeout ?? DEFAULT_TIMEOUT,
++		dependencies: entry.dependencies ?? [],
++		errorPolicy: entry.errorPolicy ?? DEFAULT_ERROR_POLICY,
++		exclusive: entry.exclusive ?? false,
++		handler: entry.handler,
++		pluginId
++	};
++	return {
++		priority: DEFAULT_PRIORITY,
++		timeout: DEFAULT_TIMEOUT,
++		dependencies: [],
++		errorPolicy: DEFAULT_ERROR_POLICY,
++		exclusive: false,
++		handler: entry,
++		pluginId
++	};
++}
++function normalizeRouteEntry(entry) {
++	if (typeof entry === "function") return { handler: entry };
++	return {
++		handler: entry.handler,
++		public: entry.public,
++		input: entry.input
++	};
++}
++function resolveRoutes(routes = {}) {
++	const resolvedRoutes = {};
++	for (const [routeName, rawEntry] of Object.entries(routes)) {
++		const { handler, public: publicFlag, input: inputSchema } = normalizeRouteEntry(rawEntry);
++		resolvedRoutes[routeName] = {
++			input: inputSchema,
++			public: publicFlag,
++			handler: async (ctx) => {
++				const headers = {};
++				ctx.request.headers.forEach((value, name) => {
++					headers[name] = value;
++				});
++				const routeCtx = {
++					input: ctx.input,
++					request: {
++						url: ctx.request.url,
++						method: ctx.request.method,
++						headers
++					},
++					requestMeta: ctx.requestMeta
++				};
++				const { input: _input, request: _request, requestMeta: _requestMeta, ...pluginCtx } = ctx;
++				return handler(routeCtx, pluginCtx);
++			}
++		};
++	}
++	return resolvedRoutes;
++}
++function resolveStorage(rawStorage = {}) {
++	const storage = {};
++	for (const [name, config] of Object.entries(rawStorage)) storage[name] = {
++		indexes: config.indexes ?? [],
++		uniqueIndexes: config.uniqueIndexes
++	};
++	return storage;
++}
+ /**
+ * Native-format entry called by emdash at build time with the options
+ * serialized from the descriptor. Returns a ResolvedPlugin ready for the
+ * HookPipeline.
+ */
+ function createPlugin(options = {}) {
+-	const resolved = adaptSandboxEntry(definition, {
+-		id: options.id ?? "dashcommerce",
+-		version: options.version ?? "0.0.0",
+-		entrypoint: "@dashcommerce/core/sandbox",
+-		capabilities: options.capabilities ?? DEFAULT_CAPABILITIES,
++	const id = options.id ?? "dashcommerce";
++	const version = options.version ?? "0.0.0";
++	const resolvedHooks = {};
++	for (const [hookName, entry] of Object.entries(definition.hooks ?? {})) {
++		resolvedHooks[hookName] = resolveSandboxedHook(entry, id);
++	}
++	return {
++		id,
++		version,
++		capabilities: normalizeCapabilities(options.capabilities ?? DEFAULT_CAPABILITIES),
+ 		allowedHosts: options.allowedHosts ?? DEFAULT_ALLOWED_HOSTS,
+-		storage: DASHCOMMERCE_STORAGE,
+-		adminPages: ADMIN_PAGES,
+-		adminWidgets: ADMIN_WIDGETS
+-	});
+-	const admin = resolved.admin ?? {};
+-	admin.fieldWidgets = FIELD_WIDGETS;
+-	admin.portableTextBlocks = PORTABLE_TEXT_BLOCKS;
+-	resolved.admin = admin;
+-	return resolved;
++		storage: resolveStorage(DASHCOMMERCE_STORAGE),
++		hooks: resolvedHooks,
++		routes: resolveRoutes(definition.routes),
++		admin: {
++			pages: ADMIN_PAGES,
++			widgets: ADMIN_WIDGETS,
++			fieldWidgets: FIELD_WIDGETS,
++			portableTextBlocks: PORTABLE_TEXT_BLOCKS
++		}
++	};
+ }
+ 
+ //#endregion
+diff --git a/package.json b/package.json
+index 9881023d492e2ce77a1b99a4041081cf4248ce8d..129c24e4d21c1b2ac9c3972d8ea9ee4781489de4 100644
+--- a/package.json
++++ b/package.json
+@@ -65,7 +65,7 @@
+     "test": "bun test"
+   },
+   "peerDependencies": {
+-    "emdash": ">=0.5.0 <0.7.0",
++    "emdash": ">=0.5.0 <0.28.0",
+     "react": "^18.0.0 || ^19.0.0",
+     "react-dom": "^18.0.0 || ^19.0.0"
+   },

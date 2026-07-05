@@ -32,6 +32,14 @@ jobs:
           ref: main
           path: upstream-starter
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Enable pnpm
+        run: corepack enable
+
       - name: Sync starter files
         run: |
           set -euo pipefail
@@ -40,8 +48,10 @@ jobs:
             --exclude ".git/" \
             --exclude ".github/" \
             --exclude "upstream-starter/" \
+            --exclude ".node-version" \
             --exclude "wrangler.jsonc" \
             --exclude "pnpm-workspace.yaml" \
+            --exclude "patches/" \
             --exclude "scripts/patch-wrangler-config.mjs" \
             --exclude "scripts/cf-d1-seed.mjs"
 
@@ -57,6 +67,15 @@ jobs:
           const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
           const deploy = "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs && wrangler deploy --config dist/server/wrangler.json";
 
+          pkg.dependencies = {
+            ...pkg.dependencies,
+            "@emdash-cms/cloudflare": "^0.27.0",
+            emdash: "^0.27.0",
+          };
+          pkg.engines = {
+            ...pkg.engines,
+            node: ">=22.12.0",
+          };
           pkg.scripts = {
             ...pkg.scripts,
             deploy,
@@ -64,9 +83,20 @@ jobs:
             "cf:dev": "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs && wrangler dev --config dist/server/wrangler.json",
           };
           pkg.packageManager = "pnpm@11.9.0";
+          pkg.patchedDependencies = {
+            "@dashcommerce/core@0.1.4": "patches/@dashcommerce__core@0.1.4.patch",
+          };
 
           fs.writeFileSync(path, JSON.stringify(pkg, null, "\t") + "\n");
           NODE
+
+          rm -f bun.lock
+
+      - name: Refresh lockfile
+        run: pnpm install --lockfile-only
+
+      - name: Check peer dependencies
+        run: pnpm peers check
 
       - name: Commit synced starter
         run: |
