@@ -41,13 +41,32 @@ jobs:
             --exclude ".github/" \
             --exclude "upstream-starter/" \
             --exclude "wrangler.jsonc" \
-            --exclude "package.json" \
-            --exclude "pnpm-lock.yaml" \
             --exclude "pnpm-workspace.yaml" \
             --exclude "scripts/patch-wrangler-config.mjs" \
             --exclude "scripts/cf-d1-seed.mjs"
 
           rm -rf upstream-starter
+
+      - name: Reapply deployment package settings
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require("fs");
+          const path = "package.json";
+          const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+          const deploy = "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs && wrangler deploy --config dist/server/wrangler.json";
+
+          pkg.scripts = {
+            ...pkg.scripts,
+            deploy,
+            "cf:deploy": deploy,
+            "cf:dev": "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs && wrangler dev --config dist/server/wrangler.json",
+          };
+          pkg.packageManager = "pnpm@11.9.0";
+
+          fs.writeFileSync(path, JSON.stringify(pkg, null, "\t") + "\n");
+          NODE
 
       - name: Commit synced starter
         run: |
