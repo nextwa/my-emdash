@@ -1,0 +1,38 @@
+diff --git a/dist/sandbox-entry.js b/dist/sandbox-entry.js
+index 980dca483d6fbb2775b7f12278c3e23da2185d96..b8d8441b72c64058ea93b03916eb2f21069616da 100644
+--- a/dist/sandbox-entry.js
++++ b/dist/sandbox-entry.js
+@@ -6833,31 +6833,7 @@ const ADMIN_PAGES = [
+ 	{ path: "/settings", label: "Settings", icon: "settings" }
+ ];
+-const ADMIN_WIDGETS = [
+-	{
+-		id: "revenue-snapshot",
+-		title: "Revenue",
+-		size: "half"
+-	},
+-	{
+-		id: "low-stock-alerts",
+-		title: "Low Stock",
+-		size: "half"
+-	},
+-	{
+-		id: "recent-orders",
+-		title: "Recent Orders",
+-		size: "full"
+-	},
+-	{
+-		id: "pending-reviews",
+-		title: "Pending Reviews",
+-		size: "third"
+-	},
+-	{
+-		id: "failed-subscriptions",
+-		title: "Failed Renewals",
+-		size: "third"
+-	}
+-];
++const ADMIN_WIDGETS = [];
+ const FIELD_WIDGETS = [
+ 	{
+ 		name: "vendor-select",

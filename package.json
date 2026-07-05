@@ -59,6 +59,7 @@
 	"license": "MIT",
 	"packageManager": "pnpm@11.9.0",
 	"patchedDependencies": {
-		"emdash@0.6.0": "patches/emdash@0.6.0.patch"
+		"emdash@0.6.0": "patches/emdash@0.6.0.patch",
+		"@dashcommerce/core@0.1.4": "patches/@dashcommerce__core@0.1.4.patch"
 	}
 }
