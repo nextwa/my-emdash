@@ -1,0 +1,78 @@
+name: Sync upstream EmDash blog-cloudflare
+
+on:
+  schedule:
+    # daily at 03:20 UTC
+    - cron: "20 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch upstream blog-cloudflare template
+        run: |
+          set -e
+          curl -sL "https://api.github.com/repos/emdash-cms/templates/tarball/main" -o tpl.tar.gz
+          mkdir -p _up
+          tar -xzf tpl.tar.gz -C _up --strip-components=1 "emdash-cms-templates-*/blog-cloudflare"
+
+      - name: Replace repo with upstream
+        run: |
+          set -e
+          cp .github/workflows/sync-upstream.yml /tmp/sync-upstream.yml
+          cp .gitignore /tmp/gitignore.bak 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' -exec rm -rf {} +
+          cp -R _up/blog-cloudflare/. .
+          rm -rf _up tpl.tar.gz
+
+      - name: Re-apply free-tier patch (remove sandbox / paid features)
+        run: |
+          set -e
+          # astro.config.mjs: drop sandbox + marketplace, run plugins in-process
+          sed -i 's/import { d1, r2, sandbox } from/import { d1, r2 } from/' astro.config.mjs
+          sed -i '/sandboxed: \[/,/\],/d' astro.config.mjs
+          sed -i '/sandboxRunner: sandbox(),/d' astro.config.mjs
+          sed -i '/marketplace: /d' astro.config.mjs
+          sed -i 's/plugins: \[formsPlugin()\],/plugins: [formsPlugin(), webhookNotifier],/' astro.config.mjs
+
+          # worker.ts: only export default (drop PluginBridge Durable Object)
+          printf 'export { default } from "@emdash-cms/cloudflare/worker";\n' > src/worker.ts
+
+          # wrangler.jsonc: strip worker_loaders, set worker name + real binding IDs
+          node -e '
+            const fs = require("fs");
+            let raw = fs.readFileSync("wrangler.jsonc","utf8");
+            let clean = raw.replace(/\/\/.*$/gm,"").replace(/\/\*[\s\S]*?\*\//g,"");
+            let cfg = JSON.parse(clean);
+            cfg.name = "my-emdash";
+            cfg.d1_databases = cfg.d1_databases || [{}];
+            cfg.d1_databases[0] = { binding:"DB", database_name:"my-emdash-site", database_id:"660855a7-7bc6-4a2e-91e9-6db5f88f63c9" };
+            cfg.r2_buckets = [{ binding:"MEDIA", bucket_name:"my-emdash-media" }];
+            cfg.kv_namespaces = [{ binding:"SESSION", id:"a6b4d3b801974215872df85858b0aa5f" }];
+            delete cfg.worker_loaders;
+            fs.writeFileSync("wrangler.jsonc", JSON.stringify(cfg,null,"\t")+"\n");
+          '
+
+      - name: Restore workflow + gitignore
+        run: |
+          mkdir -p .github/workflows
+          cp /tmp/sync-upstream.yml .github/workflows/sync-upstream.yml
+          printf 'node_modules\n.wrangler\ndist\n.data\n' > .gitignore
+
+      - name: Commit and push if changed
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No upstream changes."
+          else
+            git commit -m "chore: sync upstream emdash-cms/templates/blog-cloudflare + free-tier patch"
+            git push
+          fi
