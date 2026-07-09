@@ -1,44 +1,30 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "my-emdash",
-	"compatibility_date": "2026-04-01",
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
-	// `main` and `assets` are intentionally omitted here. @astrojs/cloudflare
-	// v13+ emits a fully-resolved `dist/server/wrangler.json` at build time
-	// that merges these fields with the bindings + vars below. Always deploy
-	// against that generated file:
-	//
-	//   wrangler deploy --config dist/server/wrangler.json
-	//
-	// Use `bun run cf:deploy` which handles this automatically.
-	"vars": {
-		"SITE_URL": "https://my-emdash.nextwa.workers.dev"
-	},
+	"main": "./src/worker.ts",
+	"compatibility_date": "2026-02-24",
+	"compatibility_flags": ["nodejs_compat"],
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "my-emdash-site",
-			"database_id": "7da55f5c-1eac-44cc-8a84-66c69b4f2099"
-		}
+			"database_id": "660855a7-7bc6-4a2e-91e9-6db5f88f63c9",
+		},
 	],
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
-			"bucket_name": "my-emdash-media"
-		}
+			"bucket_name": "my-emdash-media",
+		},
 	],
 	"kv_namespaces": [
 		{
 			"binding": "SESSION",
-			"id": "a6b4d3b801974215872df85858b0aa5f"
-		}
-	]
-	// Secrets (not in this file — set via `wrangler secret put`):
-	//   EMDASH_AUTH_SECRET      — session/token signing (generate with `openssl rand -hex 32`)
-	//   EMDASH_PREVIEW_SECRET   — draft content preview signing
-	//
-	// Also set at build time (not here — passed via CI env or shell):
-	//   R2_PUBLIC_URL           — baked into the bundle, e.g. https://pub-xxx.r2.dev
+			"id": "a6b4d3b801974215872df85858b0aa5f",
+		},
+	],
+	// Drives scheduled publishing, plugin cron, and maintenance (see src/worker.ts)
+	"triggers": {
+		"crons": ["* * * * *"],
+	},
 }

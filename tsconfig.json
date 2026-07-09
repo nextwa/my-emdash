@@ -1,8 +1,7 @@
 {
 	"extends": "astro/tsconfigs/base",
 	"compilerOptions": {
-		"types": ["node"],
-		"jsx": "react-jsx"
+		"types": ["node"]
 	},
 	"include": ["src", ".astro/types.d.ts", "emdash-env.d.ts"]
 }

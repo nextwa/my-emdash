@@ -1,67 +1,33 @@
 {
-	"name": "@dashcommerce/starter",
-	"version": "0.3.0",
-	"private": true,
-	"description": "DashCommerce starter — a full Astro commerce site. Clone, configure Stripe keys, go.",
-	"type": "module",
-	"scripts": {
-		"dev": "astro dev",
-		"build": "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs",
-		"deploy": "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs && wrangler deploy --config dist/server/wrangler.json",
-		"preview": "astro preview",
-		"start": "node ./dist/server/entry.mjs",
-		"seed": "emdash seed --on-conflict=update",
-		"seed:skip": "emdash seed --on-conflict=skip",
-		"bootstrap": "emdash init && dashcommerce-merge-seed && emdash seed --on-conflict=update",
-		"cf:deploy": "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs && wrangler deploy --config dist/server/wrangler.json",
-		"cf:dev": "DEPLOY_TARGET=cloudflare astro build && node scripts/patch-wrangler-config.mjs && wrangler dev --config dist/server/wrangler.json",
-		"cf:d1:create": "wrangler d1 create dashcommerce-demo",
-		"cf:d1:seed": "node scripts/cf-d1-seed.mjs",
-		"typecheck": "astro check",
-		"build:node": "astro build"
-	},
-	"emdash": {
-		"label": "DashCommerce Starter",
-		"description": "A Stripe-powered storefront with 6 demo products covering every product type, a journal, and a fully CMS-driven homepage.",
-		"seed": ".emdash/seed.json",
-		"preview": "https://demo.dashcommerce.dev"
-	},
-	"dependencies": {
-		"@astrojs/cloudflare": "^13.1.10",
-		"@astrojs/node": "^10.0.0",
-		"@astrojs/react": "^5.0.0",
-		"@astrojs/sitemap": "^3.4.0",
-		"@dashcommerce/core": "^0.1.4",
-		"@emdash-cms/cloudflare": "^0.27.0",
-		"@stripe/react-stripe-js": "^6.0.0",
-		"@stripe/stripe-js": "^9.0.0",
-		"astro": "^6.0.0",
-		"emdash": "^0.27.0",
-		"react": "^19.0.0",
-		"react-dom": "^19.0.0"
-	},
-	"devDependencies": {
-		"@astrojs/check": "^0.9.0",
-		"@cloudflare/workers-types": "^4.20260305.1",
-		"@types/node": "^22.0.0",
-		"@types/react": "^19.0.0",
-		"@types/react-dom": "^19.0.0",
-		"typescript": "^5.9.0",
-		"wrangler": "^4.83.0"
-	},
-	"keywords": [
-		"emdash",
-		"astro",
-		"dashcommerce",
-		"ecommerce",
-		"starter"
-	],
-	"license": "MIT",
-	"packageManager": "pnpm@11.9.0",
-	"engines": {
-		"node": ">=22.12.0"
-	},
-	"patchedDependencies": {
-		"@dashcommerce/core@0.1.4": "patches/@dashcommerce__core@0.1.4.patch"
-	}
+  "name": "@emdash-cms/template-blog-cloudflare",
+  "version": "0.0.3",
+  "private": true,
+  "type": "module",
+  "emdash": {
+    "seed": "seed/seed.json"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "astro build && wrangler deploy",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.0.0",
+    "@astrojs/react": "^6.0.0",
+    "@emdash-cms/cloudflare": "^0.28.1",
+    "@emdash-cms/plugin-forms": "^0.2.4",
+    "@emdash-cms/plugin-webhook-notifier": "^0.2.0",
+    "astro": "^7.0.0",
+    "emdash": "^0.28.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.7",
+    "@cloudflare/workers-types": "^4.20260305.1",
+    "wrangler": "^4.99.0"
+  },
+  "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b"
 }
