@@ -17,10 +17,11 @@ jobs:
 
       - name: Fetch upstream blog-cloudflare template
         run: |
-          set -e
-          curl -sL "https://api.github.com/repos/emdash-cms/templates/tarball/main" -o tpl.tar.gz
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://api.github.com/repos/emdash-cms/templates/tarball/main" -o tpl.tar.gz
           mkdir -p _up
-          tar -xzf tpl.tar.gz -C _up --strip-components=1 "emdash-cms-templates-*/blog-cloudflare"
+          tar -xzf tpl.tar.gz -C _up --strip-components=1
+          test -f _up/blog-cloudflare/package.json
 
       - name: Replace repo with upstream
         run: |
@@ -48,7 +49,10 @@ jobs:
           node -e '
             const fs = require("fs");
             let raw = fs.readFileSync("wrangler.jsonc","utf8");
-            let clean = raw.replace(/\/\/.*$/gm,"").replace(/\/\*[\s\S]*?\*\//g,"");
+            let clean = raw
+              .replace(/\/\/.*$/gm,"")
+              .replace(/\/\*[\s\S]*?\*\//g,"")
+              .replace(/,\s*([}\]])/g,"$1");
             let cfg = JSON.parse(clean);
             cfg.name = "my-emdash";
             cfg.d1_databases = cfg.d1_databases || [{}];
