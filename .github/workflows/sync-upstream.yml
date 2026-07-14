@@ -85,7 +85,7 @@ jobs:
             let cfg = JSON.parse(clean);
             cfg.name = "my-emdash";
             cfg.d1_databases = cfg.d1_databases || [{}];
-            cfg.d1_databases[0] = { binding:"DB", database_name:"my-emdash-site", database_id:"660855a7-7bc6-4a2e-91e9-6db5f88f63c9" };
+            cfg.d1_databases[0] = { binding:"DB", database_name:"my-emdash-site", database_id:"17af3af5-b246-4d80-a061-cb04d5ca1c57" };
             cfg.r2_buckets = [{ binding:"MEDIA", bucket_name:"my-emdash-media" }];
             cfg.kv_namespaces = [{ binding:"SESSION", id:"a6b4d3b801974215872df85858b0aa5f" }];
             delete cfg.worker_loaders;
