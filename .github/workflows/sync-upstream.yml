@@ -39,13 +39,37 @@ jobs:
 
       - name: Re-apply free-tier patch (remove sandbox / paid features)
         run: |
-          set -e
-          # astro.config.mjs: drop sandbox + marketplace, run plugins in-process
-          sed -i 's/import { d1, r2, sandbox } from/import { d1, r2 } from/' astro.config.mjs
-          sed -i '/sandboxed: \[/,/\],/d' astro.config.mjs
-          sed -i '/sandboxRunner: sandbox(),/d' astro.config.mjs
-          sed -i '/marketplace: /d' astro.config.mjs
-          sed -i 's/plugins: \[formsPlugin()\],/plugins: [formsPlugin(), webhookNotifier],/' astro.config.mjs
+          set -euo pipefail
+          # Drop paid sandbox features and run the plugins in-process. Fail if
+          # the upstream structure changes so a broken config is never committed.
+          node <<'NODE'
+          const fs = require("fs");
+          const path = "astro.config.mjs";
+          let source = fs.readFileSync(path, "utf8");
+
+          source = source
+            .replace(
+              /import\s*\{\s*d1,\s*r2,\s*sandbox\s*\}\s*from\s*"@emdash-cms\/cloudflare";/,
+              'import { d1, r2 } from "@emdash-cms/cloudflare";',
+            )
+            .replace(/^[ \t]*sandboxed:\s*\[[\s\S]*?\],?\s*$/m, "")
+            .replace(/^[ \t]*sandboxRunner:\s*sandbox\(\),?\s*$/m, "")
+            .replace(/^[ \t]*marketplace:\s*.*$/m, "")
+            .replace(
+              /^(\s*)plugins:\s*\[formsPlugin\(\)\],/m,
+              "$1plugins: [formsPlugin(), webhookNotifier],",
+            );
+
+          const invalid = ["sandbox }", "sandboxed:", "sandboxRunner:", "marketplace:"];
+          if (invalid.some((value) => source.includes(value))) {
+            throw new Error("Upstream Astro config no longer matches the free-tier patch");
+          }
+          if (!source.includes("plugins: [formsPlugin(), webhookNotifier],")) {
+            throw new Error("Plugin configuration was not patched");
+          }
+
+          fs.writeFileSync(path, source);
+          NODE
 
           # worker.ts: only export default (drop PluginBridge Durable Object)
           printf 'export { default } from "@emdash-cms/cloudflare/worker";\n' > src/worker.ts
@@ -67,6 +91,9 @@ jobs:
             delete cfg.worker_loaders;
             fs.writeFileSync("wrangler.jsonc", JSON.stringify(cfg,null,"\t")+"\n");
           '
+
+          node --check astro.config.mjs
+          node --check src/worker.ts
 
       - name: Restore workflow + gitignore
         run: |

@@ -15,10 +15,12 @@ export default defineConfig({
 	},
 	integrations: [
 		react(),
-		emdash({
-			database: d1({ binding: "DB", session: "auto" }),
-			storage: r2({ binding: "MEDIA" }),
-			plugins: [formsPlugin(), webhookNotifier],
+			emdash({
+				database: d1({ binding: "DB", session: "auto" }),
+				storage: r2({ binding: "MEDIA" }),
+				plugins: [formsPlugin(), webhookNotifier],
+			}),
+	],
 	fonts: [
 		{
 			provider: fontProviders.google(),
